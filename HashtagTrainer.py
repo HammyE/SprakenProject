@@ -1,4 +1,5 @@
 import numpy as np
+import pandas
 
 class HashtagTrainer:
     """
@@ -18,7 +19,7 @@ class HashtagTrainer:
         #  ------------- Hyperparameters ------------------ #
 
         self.LEARNING_RATE = 0.1  # The learning rate. 0.01
-        self.CONVERGENCE_MARGIN = 0.001  # The convergence criterion. 0.001
+        self.CONVERGENCE_MARGIN = 0.01  # The convergence criterion. 0.001
         self.MAX_ITERATIONS = 1000  # Maximal number of passes through the datapoints in stochastic gradient descent.
         self.MINIBATCH_SIZE = 1000  # Minibatch size (only for minibatch gradient descent)
 
@@ -42,7 +43,7 @@ class HashtagTrainer:
             self.LABELS = len(set(y))
 
             # Set of labels.
-            self.labels = list(set(y))
+            self.labels = list(dict.fromkeys(y))
 
             # Encoding of the data points (as a DATAPOINTS x FEATURES size array).
             self.x = np.concatenate((np.ones((self.DATAPOINTS, 1)), np.array(x)), axis=1)
@@ -51,7 +52,8 @@ class HashtagTrainer:
             self.y = np.array(y)
 
             # The weights we want to learn in the training phase.
-            self.theta = np.random.uniform(-1, 1, (self.LABELS, self.FEATURES))
+            # self.theta = np.random.uniform(-1, 1, (self.LABELS, self.FEATURES))
+            self.theta = np.ones((self.LABELS, self.FEATURES))
 
             # The current gradient.
             self.jacoby = np.zeros((self.LABELS, self.FEATURES))
@@ -61,13 +63,6 @@ class HashtagTrainer:
         The softmax function.
         """
         return np.exp(z) / sum(np.exp(z))
-
-    def conditional_prob(self, label, datapoint):
-        # """
-        # Computes the conditional probability P(label|datapoint)
-        # """
-        # temp = self.softmax(np.dot(self.theta, self.x[datapoint]))
-        # return temp[label]
 
     def compute_gradient_for_all(self):
         """
@@ -79,9 +74,9 @@ class HashtagTrainer:
             for d in range(0, self.DATAPOINTS):
                 v_2 = (self.softmax(np.dot(self.theta, self.x[d])))[k]
                 if self.labels[k] == self.y[d]:
-                    v_1 += self.x[d]*(v_2-1)
+                    v_1 += self.x[d] * (v_2 - 1)
                 else:
-                    v_1 += self.x[d]*v_2
+                    v_1 += self.x[d] * v_2
             v_1 = v_1 / self.DATAPOINTS
             for n in range(0, self.FEATURES):
                 self.jacoby[k][n] = v_1[n]
@@ -104,51 +99,56 @@ class HashtagTrainer:
         """
         Classifies datapoints
         """
-        # print('Model parameters:')
-        #
-        # print('  '.join('{:d}: {:.4f}'.format(k, self.theta[k]) for k in range(self.FEATURES)))
-        #
-        # self.DATAPOINTS = len(test_data)
-        #
-        # self.x = np.concatenate((np.ones((self.DATAPOINTS, 1)), np.array(test_data)), axis=1)
-        # self.y = np.array(test_labels)
-        # confusion = np.zeros((self.FEATURES, self.FEATURES))
-        #
-        # for d in range(self.DATAPOINTS):
-        #     prob = self.conditional_prob(1, d)
-        #     predicted = 1 if prob > .5 else 0
-        #     confusion[predicted][self.y[d]] += 1
-        #
-        # print('                       Real class')
-        # print('                 ', end='')
-        # print(' '.join('{:>8d}'.format(i) for i in range(2)))
-        # for i in range(2):
-        #     if i == 0:
-        #         print('Predicted class: {:2d} '.format(i), end='')
-        #     else:
-        #         print('                 {:2d} '.format(i), end='')
-        #     print(' '.join('{:>8.3f}'.format(confusion[i][j]) for j in range(2)))
+        if self.FEATURES != len(test_data[0]):
+            print("Error: Felaktig indata")
 
-    def print_result(self):
-        print(' '.join(['{:.2f}'.format(x) for x in self.theta]))
-        print(' '.join(['{:.2f}'.format(x) for x in self.jacoby]))
+        results = np.zeros((self.LABELS, self.LABELS))
 
+        for i in range(len(test_data)):
+            probability_vector = self.softmax(np.dot(self.theta, test_data[i]))
+            predicted_index = np.argmax(probability_vector, axis=0)
+            true_index = self.labels.index(test_labels[i])
+            results[predicted_index][true_index] = results[predicted_index][true_index] + 1
+            print(probability_vector)
+
+        row_labels = [self.labels[0], self.labels[1], self.labels[2], self.labels[3]]
+        column_labels = [self.labels[0], self.labels[1], self.labels[2], self.labels[3]]
+        df = pandas.DataFrame(results, columns=column_labels, index=row_labels, dtype=int)
+        print(df)
 
 def main():
     """
     Tests the code on a toy example.
     """
-    x = [[0, 0, 1],
-         [0, 1, 0],
-         [1, 0, 1],
-         [1, 1, 0],
-         [1, 0, 1]]
+    x = [[1, 1, 0, 0, 0, 0, 0, 0],
+         [0, 1, 0, 0, 0, 0, 0, 0],
+         [1, 0, 0, 0, 0, 0, 0, 0],
+         [1, 1, 1, 0, 0, 0, 0, 0],
+         [0, 0, 1, 1, 0, 0, 0, 0],
+         [0, 0, 1, 0, 0, 0, 0, 0],
+         [0, 0, 0, 1, 0, 0, 0, 0],
+         [1, 0, 0, 1, 0, 0, 0, 0],
+         [0, 0, 0, 0, 1, 1, 0, 0],
+         [0, 0, 0, 0, 0, 1, 0, 0],
+         [0, 0, 0, 0, 1, 0, 0, 0],
+         [0, 0, 2, 0, 0, 1, 0, 0],
+         [0, 0, 0, 0, 0, 0, 1, 1],
+         [0, 0, 0, 0, 0, 0, 1, 0],
+         [0, 0, 0, 0, 0, 0, 0, 1],
+         [1, 0, 0, 0, 0, 0, 1, 0]]
 
     #  Encoding of the correct classes for the training material
-    y = ["Trump2020", "Biden2020", "Trump2020", "Biden2020", "Biden2020"]
+    y = ["glad", "glad", "glad", "glad", "arg", "arg", "arg", "arg", "ledsen", "ledsen", "ledsen", "ledsen",
+         "exalterad", "exalterad", "exalterad", "exalterad"]
     b = HashtagTrainer(x, y)
     b.fit()
-    b.classify_datapoints(x, y)
+    test_data = [[1, 1, 1, 0, 0, 0, 0, 0, 0],
+                 [1, 0, 0, 0, 0, 0, 1, 1, 1]]
+    arr = np.array(test_data)
+    test_labels = ["glad", "exalterad"]
+    b.classify_datapoints(arr, test_labels)
     # b.print_result()
 
-main()
+
+if __name__ == '__main__':
+    main()

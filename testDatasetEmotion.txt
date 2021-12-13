@@ -1,0 +1,77 @@
+Särdrag: le skratta skrika förbannat tår böla uppspelt taggad
+Klasser: glad arg ledsen exalterad
+
+jag vill skratta och le för jag mår så bra #glad
+[1, 1, 0, 0, 0, 0, 0, 0]
+jag vill skratta och dansa för det är kul #glad
+[0, 1, 0, 0, 0, 0, 0, 0]
+du borde le idag för solen skinner #glad
+[1, 0, 0, 0, 0, 0, 0, 0]
+jag vill skrika och skratta och le för denna dagen kommer bli dunder #glad
+[1, 1, 1, 0, 0, 0, 0, 0]
+
+jag kommer att skrika om provet går förbannat dåligt #arg
+[0, 0, 1, 1, 0, 0, 0, 0]
+jag vill skrika så fort jag ser hans fula ansikte #arg
+[0, 0, 1, 0, 0, 0, 0, 0]
+förbannat också det där gjorde ont #arg
+[0, 0, 0, 1, 0, 0, 0, 0]
+att de ska le när jag trilla var förbannat dåligt #arg
+[1, 0, 0, 1, 0, 0, 0, 0]
+
+jag vill böla och fälla en tår #ledsen
+[0, 0, 0, 0, 1, 1, 0, 0]
+du får böla om du trillar av cykeln #ledsen
+[0, 0, 0, 0, 0, 1, 0, 0]
+behöver du fälla en tår får du göra det #ledsen
+[0, 0, 0, 0, 1, 0, 0, 0]
+önskar att jag kunde skrika men allt jag kan göra är att böla #ledsen
+[0, 0, 2, 0, 0, 1, 0, 0]
+
+jag är så jävla uppspelt och taggad på denna konsert #exalterad
+[0, 0, 0, 0, 0, 0, 1, 1]
+helvete vad uppspelt du är och det har du all rätt till #exalterad
+[0, 0, 0, 0, 0, 0, 1, 0]
+aldrig varit så här taggad i mitt liv #exalterad
+[0, 0, 0, 0, 0, 0, 0, 1]
+jag är så uppspelt att jag inte kan sluta le #exalterad
+[1, 0, 0, 0, 0, 0, 1, 0]
+
+Samlade x vektorer
+[
+[1, 1, 0, 0, 0, 0, 0, 0],
+[0, 1, 0, 0, 0, 0, 0, 0],
+[1, 0, 0, 0, 0, 0, 0, 0],
+[1, 1, 1, 0, 0, 0, 0, 0],
+[0, 0, 1, 1, 0, 0, 0, 0],
+[0, 0, 1, 0, 0, 0, 0, 0],
+[0, 0, 0, 1, 0, 0, 0, 0],
+[1, 0, 0, 1, 0, 0, 0, 0],
+[0, 0, 0, 0, 1, 1, 0, 0],
+[0, 0, 0, 0, 0, 1, 0, 0],
+[0, 0, 0, 0, 1, 0, 0, 0],
+[0, 0, 2, 0, 0, 1, 0, 0],
+[0, 0, 0, 0, 0, 0, 1, 1],
+[0, 0, 0, 0, 0, 0, 1, 0],
+[0, 0, 0, 0, 0, 0, 0, 1],
+[1, 0, 0, 0, 0, 0, 1, 0]
+]
+
+Klasser
+["glad", "glad", "glad", "glad", "arg", "arg", "arg", "arg", "ledsen", "ledsen", "ledsen", "ledsen", "exalterad", "exalterad", "exalterad", "exalterad"]
+
+Testdata
+vi alla vill gå på denna fest och hoppas på att få le och skratta #glad
+[1, 1, 0, 0, 0, 0, 0, 0]
+jag är så taggad och uppspelt att jag tror jag kommer böla #exalterad
+[0, 0, 0, 0, 0, 1, 1, 1]
+
+[
+[1, 1, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 1, 1, 1]
+]
+
+["glad", "exalterad"]
+
+
+
