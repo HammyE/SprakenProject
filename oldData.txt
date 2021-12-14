@@ -1,0 +1,28 @@
+    x = [[1, 1, 0, 0, 0, 0, 0, 0],
+         [0, 1, 0, 0, 0, 0, 0, 0],
+         [1, 0, 0, 0, 0, 0, 0, 0],
+         [1, 1, 1, 0, 0, 0, 0, 0],
+         [0, 0, 1, 1, 0, 0, 0, 0],
+         [0, 0, 1, 0, 0, 0, 0, 0],
+         [0, 0, 0, 1, 0, 0, 0, 0],
+         [1, 0, 0, 1, 0, 0, 0, 0],
+         [0, 0, 0, 0, 1, 1, 0, 0],
+         [0, 0, 0, 0, 0, 1, 0, 0],
+         [0, 0, 0, 0, 1, 0, 0, 0],
+         [0, 0, 2, 0, 0, 1, 0, 0],
+         [0, 0, 0, 0, 0, 0, 1, 1],
+         [0, 0, 0, 0, 0, 0, 1, 0],
+         [0, 0, 0, 0, 0, 0, 0, 1],
+         [1, 0, 0, 0, 0, 0, 1, 0]]
+
+    #  Encoding of the correct classes for the training material
+    y = ["glad", "glad", "glad", "glad", "arg", "arg", "arg", "arg", "ledsen", "ledsen", "ledsen", "ledsen",
+         "exalterad", "exalterad", "exalterad", "exalterad"]
+    b = HashtagTrainer(x, y)
+    b.fit()
+    test_data = [[1, 1, 1, 0, 0, 0, 0, 0, 0],
+                 [1, 0, 0, 0, 0, 0, 1, 1, 1]]
+    arr = np.array(test_data)
+    test_labels = ["glad", "exalterad"]
+    b.classify_datapoints(arr, test_labels)
+    # b.print_result()
