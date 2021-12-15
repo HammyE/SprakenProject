@@ -4,6 +4,9 @@ import numpy as np
 import pandas
 from matplotlib import pyplot as plt
 import matplotlib
+
+from DataParser import DataParser
+
 matplotlib.use("TkAgg")
 
 
@@ -25,20 +28,20 @@ class HashtagTrainer(object):
         #  ------------- Hyperparameters ------------------ #
 
         self.LEARNING_RATE = 0.1  # The learning rate. 0.01
-        self.CONVERGENCE_MARGIN = 0.01  # The convergence criterion. 0.001
+        self.CONVERGENCE_MARGIN = 0.001  # The convergence criterion. 0.001
         self.MAX_ITERATIONS = 1000  # Maximal number of passes through the datapoints in stochastic gradient descent.
         self.MINIBATCH_SIZE = 1000  # Minibatch size (only for minibatch gradient descent)
 
         # -------------------------------------------------- #
 
-        if not any([x, y, theta]) or all([x, y, theta]):
-            raise Exception('You have to either give x and y or theta')
+        # if not any([x, y, theta]) or all([x, y, theta]):
+        #     raise Exception('You have to either give x and y or theta')
 
         if theta:
             self.FEATURES = len(theta)
             self.theta = theta
 
-        elif x and y:
+        elif True: #  x and y:
             # Number of datapoints.
             self.DATAPOINTS = len(x)
 
@@ -49,17 +52,18 @@ class HashtagTrainer(object):
             self.LABELS = len(set(y))
 
             # Distinct labels.
+            print(y[1])
             self.labels = list(dict.fromkeys(y))
 
             # Encoding of the data points (as a DATAPOINTS x FEATURES size array).
-            self.x = np.concatenate((np.ones((self.DATAPOINTS, 1)), np.array(x)), axis=1)
+            self.x = np.concatenate((np.ones((self.DATAPOINTS, 1)), x), axis=1)
 
             # Correct labels for the datapoints.
             self.y = np.array(y)
 
             # The weights we want to learn in the training phase.
-            # self.theta = np.random.uniform(-1, 1, (self.LABELS, self.FEATURES))
-            self.theta = np.ones((self.LABELS, self.FEATURES))
+            self.theta = np.random.uniform(-1, 1, (self.LABELS, self.FEATURES))
+            # self.theta = np.ones((self.LABELS, self.FEATURES))
 
             # The current jacoby matrix.
             self.jacoby = np.zeros((self.LABELS, self.FEATURES))
@@ -118,7 +122,7 @@ class HashtagTrainer(object):
                 for n in range(0, self.FEATURES):
                     self.theta[k][n] = self.theta[k][n] - self.LEARNING_RATE * self.jacoby[k][n]
 
-            self.update_plot(self.loss(self.x, self.y))
+            #self.update_plot(self.loss(self.x, self.y))
 
             # When the step is small enough it means we're almost at the minimum
             if np.sum(self.jacoby ** 2) < self.CONVERGENCE_MARGIN:
@@ -128,6 +132,9 @@ class HashtagTrainer(object):
         """
         Classifies datapoints
         """
+
+        test_data = np.concatenate((np.ones((len(test_labels), 1)), test_data), axis=1)
+
         if self.FEATURES != len(test_data[0]):
             print("Error: Felaktig indata")
 
@@ -138,18 +145,17 @@ class HashtagTrainer(object):
             predicted_index = np.argmax(probability_vector, axis=0)
             true_index = self.labels.index(test_labels[i])
             results[predicted_index][true_index] = results[predicted_index][true_index] + 1
-            print(probability_vector)
 
         # Andel av gissningarna som blir rätt
         correct_ones = 0
         for i in range(self.LABELS):
             correct_ones += results[i][i]
         accuracy = (correct_ones / np.sum(results)) * 100
-        print("Accuracy: " + str(accuracy) + "%")
+        print(f"Accuracy: {str(accuracy)} %")
 
-        row_labels = [self.labels[0], self.labels[1], self.labels[2], self.labels[3]]
-        column_labels = [self.labels[0], self.labels[1], self.labels[2], self.labels[3]]
-        df = pandas.DataFrame(results, columns=column_labels, index=row_labels, dtype=int)
+        # row_labels = [self.labels[0], self.labels[1], self.labels[2], self.labels[3]]
+        # column_labels = [self.labels[0], self.labels[1], self.labels[2], self.labels[3]]
+        df = pandas.DataFrame(results, columns=self.labels, index=self.labels, dtype=int)
         print(df)
 
     def update_plot(self, *args):
@@ -213,9 +219,14 @@ def main():
          [0, 0, 0, 0, 0, 0, 0, 1],
          [1, 0, 0, 0, 0, 0, 1, 0]]
 
+    x = np.array(x)
+
     # The training-tweets' hashtags/labels/classes
     y = ["glad", "glad", "glad", "glad", "arg", "arg", "arg", "arg", "ledsen", "ledsen", "ledsen", "ledsen",
          "exalterad", "exalterad", "exalterad", "exalterad"]
+
+    data = DataParser("./dual_parsed_data/")
+    x, y = data.parse_train()
 
     # Create a HashtagTrainer object with the tweets and their hashtags
     b = HashtagTrainer(x, y)
@@ -233,6 +244,8 @@ def main():
 
     # The test-tweet's hashtags
     test_labels = ["glad", "exalterad"]
+
+    test_data, test_labels = data.parse_test()
 
     b.classify_datapoints(test_data, test_labels)
 
