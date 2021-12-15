@@ -4,6 +4,9 @@ import numpy as np
 import pandas
 from matplotlib import pyplot as plt
 import matplotlib
+
+from DataParser import DataParser
+
 matplotlib.use("TkAgg")
 
 
@@ -51,7 +54,7 @@ class HashtagTrainer(object):
             self.labels = list(dict.fromkeys(y))
 
             # Encoding of the data points (as a DATAPOINTS x FEATURES size array).
-            self.x = np.concatenate((np.ones((self.DATAPOINTS, 1)), np.array(x)), axis=1)
+            self.x = np.concatenate((np.ones((self.DATAPOINTS, 1)), x), axis=1)
 
             # Correct labels for the datapoints.
             self.y = np.array(y)
@@ -159,6 +162,9 @@ class HashtagTrainer(object):
         """
         Classifies datapoints
         """
+
+        test_data = np.concatenate((np.ones((len(test_labels), 1)), test_data), axis=1)
+
         if self.FEATURES != len(test_data[0]):
             print("Error: Felaktig indata")
 
@@ -169,7 +175,6 @@ class HashtagTrainer(object):
             predicted_index = np.argmax(probability_vector, axis=0)
             true_index = self.labels.index(test_labels[i])
             results[predicted_index][true_index] = results[predicted_index][true_index] + 1
-            print(probability_vector)
 
         print("------------------------------- The model -------------------------------")
 
@@ -179,12 +184,13 @@ class HashtagTrainer(object):
         for i in range(self.LABELS):
             correct_ones += results[i][i]
         accuracy = (correct_ones / np.sum(results)) * 100
+        print(f"Accuracy: {str(accuracy)} %")
 
         print("Accuracy: " + str(accuracy) + "%")
 
-        row_labels = [self.labels[0], self.labels[1], self.labels[2], self.labels[3]]
-        column_labels = [self.labels[0], self.labels[1], self.labels[2], self.labels[3]]
-        df = pandas.DataFrame(results, columns=column_labels, index=row_labels, dtype=int)
+        # row_labels = [self.labels[0], self.labels[1], self.labels[2], self.labels[3]]
+        # column_labels = [self.labels[0], self.labels[1], self.labels[2], self.labels[3]]
+        df = pandas.DataFrame(results, columns=self.labels, index=self.labels, dtype=int)
         print(df)
         print("------------------------------- End of model -------------------------------\n")
 
@@ -284,9 +290,14 @@ def main():
          [0, 0, 0, 0, 0, 0, 0, 1],
          [1, 0, 0, 0, 0, 0, 1, 0]]
 
+    x = np.array(x)
+
     # The training-tweets' hashtags/labels/classes
     y = ["glad", "glad", "glad", "glad", "arg", "arg", "arg", "arg", "ledsen", "ledsen", "ledsen", "ledsen",
          "exalterad", "exalterad", "exalterad", "exalterad"]
+
+    data = DataParser("./dual_parsed_data/")
+    x, y = data.parse_train()
 
     # Create a HashtagTrainer object with the tweets and their hashtags
     b = HashtagTrainer(x, y)
@@ -304,6 +315,8 @@ def main():
 
     # The test-tweet's hashtags
     test_labels = ["glad", "exalterad"]
+
+    test_data, test_labels = data.parse_test()
 
     b.classify_datapoints(test_data, test_labels)
 
