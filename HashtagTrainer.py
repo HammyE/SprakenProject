@@ -27,7 +27,6 @@ class HashtagTrainer(object):
         self.LEARNING_RATE = 0.1  # The learning rate. 0.01
         self.CONVERGENCE_MARGIN = 0.01  # The convergence criterion. 0.001
         self.MAX_ITERATIONS = 1000  # Maximal number of passes through the datapoints in stochastic gradient descent.
-        self.MINIBATCH_SIZE = 1000  # Minibatch size (only for minibatch gradient descent)
 
         # -------------------------------------------------- #
 
@@ -87,7 +86,7 @@ class HashtagTrainer(object):
         """
         return np.exp(z) / sum(np.exp(z))
 
-    def compute_jacobian(self):
+    def compute_jacobian_for_all(self):
         """
         Computes the jacobian matrix based on the entire dataset
         (used for batch gradient descent).
@@ -104,13 +103,45 @@ class HashtagTrainer(object):
             for n in range(0, self.FEATURES):
                 self.jacoby[k][n] = k_label_avg[n]
 
+    def compute_jacobian(self, datapoint):
+        """
+        Computes the gradient based on a single datapoint
+        (used for stochastic gradient descent).
+        """
+        for k in range(0, self.LABELS):
+            k_label_sum = 0
+            hv = (self.softmax(np.dot(self.theta, self.x[datapoint])))[k]
+            if self.labels[k] == self.y[datapoint]:
+                k_label_sum += self.x[datapoint] * (hv - 1)
+            else:
+                k_label_sum += self.x[datapoint] * hv
+
+            for n in range(0, self.FEATURES):
+                self.jacoby[k][n] = k_label_sum[n]
+
+    def stochastic_fit(self):
+        """
+        Performs Stochastic Gradient Descent.
+        """
+        self.init_plot(self.FEATURES)
+
+        for i in range(self.MAX_ITERATIONS):
+            self.compute_jacobian(random.randint(0, self.DATAPOINTS-1))
+
+            self.update_plot(self.loss(self.x, self.y))
+
+            # Uppdaterar sedan vikterna
+            for k in range(1, self.LABELS):
+                for n in range(0, self.FEATURES):
+                    self.theta[k][n] = self.theta[k][n] - self.LEARNING_RATE * self.jacoby[k][n]
+
     def fit(self):
         """
         Performs Batch Gradient Descent
         """
         self.init_plot(self.FEATURES)
         while True:
-            self.compute_jacobian()
+            self.compute_jacobian_for_all()
 
             # Time to update the weights, we'll go in opposite direction of the steepest route
             # meaning we're locating the minimum
@@ -140,17 +171,53 @@ class HashtagTrainer(object):
             results[predicted_index][true_index] = results[predicted_index][true_index] + 1
             print(probability_vector)
 
+        print("------------------------------- The model -------------------------------")
+
+        self.precision_recall(results)
         # Andel av gissningarna som blir rätt
         correct_ones = 0
         for i in range(self.LABELS):
             correct_ones += results[i][i]
         accuracy = (correct_ones / np.sum(results)) * 100
+
         print("Accuracy: " + str(accuracy) + "%")
 
         row_labels = [self.labels[0], self.labels[1], self.labels[2], self.labels[3]]
         column_labels = [self.labels[0], self.labels[1], self.labels[2], self.labels[3]]
         df = pandas.DataFrame(results, columns=column_labels, index=row_labels, dtype=int)
         print(df)
+        print("------------------------------- End of model -------------------------------\n")
+
+    def precision_recall(self, results):
+        for i, row in enumerate(results):
+            sum = 0
+            for column in row:
+                sum += column
+            if sum == 0:
+                precision = "N/A"
+            else:
+                precision = str(int((row[i] / sum)*100))
+            print("Precision for #" + self.labels[i] + " = " + precision)
+
+        for column in range(self.LABELS):
+            sum = 0
+            for i, row in enumerate(results):
+                sum += row[column]
+
+            if sum == 0:
+                recall = "N/A"
+            else:
+                recall = str(int((results[column][column] / sum)*100))
+
+            print("Recall for #" + self.labels[column] + " = " + recall)
+
+
+    def classify_input(self, tweet):
+        features, labels = self.bullshit_parser(tweet)
+        probability_vector = self.softmax(np.dot(self.theta, features))
+        predicted_index = np.argmax(probability_vector, axis=0)
+        hashtag = self.y[predicted_index]
+        return hashtag
 
     def update_plot(self, *args):
         """
@@ -189,6 +256,10 @@ class HashtagTrainer(object):
             self.lines[i], = self.axes.plot([], self.val[0], '-', c=[random.random() for _ in range(3)], linewidth=1.5,
                                             markersize=4)
 
+    def bullshit_parser(self, tweet):
+        return [[1, 1, 1, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0, 0, 1, 1, 1]]
+
 
 def main():
     """
@@ -207,7 +278,7 @@ def main():
          [0, 0, 0, 0, 1, 1, 0, 0],
          [0, 0, 0, 0, 0, 1, 0, 0],
          [0, 0, 0, 0, 1, 0, 0, 0],
-         [0, 0, 2, 0, 0, 1, 0, 0],
+         [0, 0, 1, 0, 0, 1, 0, 0],
          [0, 0, 0, 0, 0, 0, 1, 1],
          [0, 0, 0, 0, 0, 0, 1, 0],
          [0, 0, 0, 0, 0, 0, 0, 1],
