@@ -5,8 +5,6 @@ import pandas
 from matplotlib import pyplot as plt
 import matplotlib
 
-from DataParser import DataParser
-
 matplotlib.use("TkAgg")
 
 
@@ -28,11 +26,10 @@ class HashtagTrainer(object):
         #  ------------- Hyperparameters ------------------ #
 
         self.LEARNING_RATE = 0.1  # The learning rate. 0.01
-        self.CONVERGENCE_MARGIN = 0.01  # The convergence criterion. 0.001
-        self.MAX_ITERATIONS = 50000  # Maximal number of passes through the datapoints in stochastic gradient descent.
-        self.CONVERGENCE_MARGIN = 0.01  # The convergence criterion. 0.001
-        self.MAX_ITERATIONS = 1000  # Maximal number of passes through the datapoints in stochastic gradient descent.
+        self.MAX_ITERATIONS = 5000  # Maximal number of passes through the datapoints in stochastic gradient descent.
+        self.CONVERGENCE_MARGIN = 0.005  # The convergence criterion. 0.001
         self.MINIBATCH_SIZE = 100
+        self.lamda = 0.01
 
         # -------------------------------------------------- #
 
@@ -70,6 +67,8 @@ class HashtagTrainer(object):
             self.jacoby = np.zeros((self.LABELS, self.FEATURES))
 
             self.translator = translator
+
+            self.show_vec = False
 
     def loss(self, x, y):
         """
@@ -137,7 +136,7 @@ class HashtagTrainer(object):
             for d in minibatch:
                 hv = (self.softmax(np.dot(self.theta, self.x[d])))[k]
                 if self.labels[k] == self.y[d]:
-                    k_label_sum += self.x[d] * (hv - 1)
+                    k_label_sum += self.x[d] * (hv - 1) #+ 2*self.lamda * self.theta[k]
                 else:
                     k_label_sum += self.x[d] * hv
             k_label_avg = k_label_sum / len(minibatch)
@@ -160,13 +159,17 @@ class HashtagTrainer(object):
                 for n in range(0, self.FEATURES):
                     self.theta[k][n] = self.theta[k][n] - self.LEARNING_RATE * self.jacoby[k][n]
 
-            iterator += 1
+
 
             if np.sum(self.jacoby ** 2) < self.CONVERGENCE_MARGIN:
+                print(self.theta)
                 break
 
-            if iterator % 1000 == 0:
+            if iterator % 500 == 0:
                 self.update_plot(self.loss(self.x, self.y))
+            if iterator % 5000 == 0:
+                print(np.sum(self.jacoby ** 2))
+            iterator += 1
 
     def stochastic_fit(self):
         """
@@ -271,11 +274,13 @@ class HashtagTrainer(object):
 
             print("Recall for #" + label + " = " + recall + '%')
 
-    def classify_input(self, tweet):
-        features, labels = self.bullshit_parser(tweet)
+    def classify_input(self, vect):
+        features = np.concatenate((np.array([1]), vect), axis=0)
         probability_vector = self.softmax(np.dot(self.theta, features))
         predicted_index = np.argmax(probability_vector, axis=0)
-        hashtag = self.y[predicted_index]
+        hashtag = self.labels[predicted_index]
+        if self.show_vec:
+            print(probability_vector)
         return hashtag
 
     def update_plot(self, *args):
@@ -318,6 +323,9 @@ class HashtagTrainer(object):
     def bullshit_parser(self, tweet):
         return [[1, 1, 1, 0, 0, 0, 0, 0, 0],
                 [1, 0, 0, 0, 0, 0, 1, 1, 1]]
+
+    def set_show_vec(self, state=True):
+        self.show_vec = state
 
 
 def main():
