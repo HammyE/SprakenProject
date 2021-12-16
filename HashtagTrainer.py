@@ -16,7 +16,7 @@ class HashtagTrainer(object):
     or stochastic gradient descent
     """
 
-    def __init__(self, x=None, y=None, theta=None):
+    def __init__(self, x=None, y=None, theta=None, translator=None):
         """
         :Constructor: Imports the data and labels needed to build theta.
 
@@ -29,18 +29,18 @@ class HashtagTrainer(object):
 
         self.LEARNING_RATE = 0.1  # The learning rate. 0.01
         self.CONVERGENCE_MARGIN = 0.01  # The convergence criterion. 0.001
-        self.MAX_ITERATIONS = 1000  # Maximal number of passes through the datapoints in stochastic gradient descent.
+        self.MAX_ITERATIONS = 4000  # Maximal number of passes through the datapoints in stochastic gradient descent.
 
         # -------------------------------------------------- #
 
-        if not any([x, y, theta]) or all([x, y, theta]):
+        if (type(x) is type(None) and type(y) is type(None)) == (type(theta) is type(None)):
             raise Exception('You have to either give x and y or theta')
 
         if theta:
             self.FEATURES = len(theta)
             self.theta = theta
 
-        elif x and y:
+        elif not (type(x) is type(None) or type(y) is type(None)):
             # Number of datapoints.
             self.DATAPOINTS = len(x)
 
@@ -65,6 +65,8 @@ class HashtagTrainer(object):
 
             # The current jacoby matrix.
             self.jacoby = np.zeros((self.LABELS, self.FEATURES))
+
+            self.translator = translator
 
     def loss(self, x, y):
         """
@@ -127,11 +129,14 @@ class HashtagTrainer(object):
         Performs Stochastic Gradient Descent.
         """
         self.init_plot(self.FEATURES)
+        count = 0
 
         for i in range(self.MAX_ITERATIONS):
-            self.compute_jacobian(random.randint(0, self.DATAPOINTS-1))
+            count += 1
+            self.compute_jacobian(random.randint(0, self.DATAPOINTS - 1))
 
-            self.update_plot(self.loss(self.x, self.y))
+            if count%50 == 1:
+                self.update_plot(self.loss(self.x, self.y))
 
             # Uppdaterar sedan vikterna
             for k in range(1, self.LABELS):
@@ -188,9 +193,13 @@ class HashtagTrainer(object):
 
         print("Accuracy: " + str(accuracy) + "%")
 
-        # row_labels = [self.labels[0], self.labels[1], self.labels[2], self.labels[3]]
-        # column_labels = [self.labels[0], self.labels[1], self.labels[2], self.labels[3]]
-        df = pandas.DataFrame(results, columns=self.labels, index=self.labels, dtype=int)
+        if self.translator:
+            local_labels = []
+            for label in self.labels:
+                local_labels.append(self.translator[int(label)])
+            df = pandas.DataFrame(results, columns=local_labels, index=local_labels, dtype=int)
+        else:
+            df = pandas.DataFrame(results, columns=self.labels, index=self.labels, dtype=int)
         print(df)
         print("------------------------------- End of model -------------------------------\n")
 
@@ -202,7 +211,7 @@ class HashtagTrainer(object):
             if sum == 0:
                 precision = "N/A"
             else:
-                precision = str(int((row[i] / sum)*100))
+                precision = str(int((row[i] / sum) * 100))
             print("Precision for #" + self.labels[i] + " = " + precision)
 
         for column in range(self.LABELS):
@@ -213,10 +222,9 @@ class HashtagTrainer(object):
             if sum == 0:
                 recall = "N/A"
             else:
-                recall = str(int((results[column][column] / sum)*100))
+                recall = str(int((results[column][column] / sum) * 100))
 
             print("Recall for #" + self.labels[column] + " = " + recall)
-
 
     def classify_input(self, tweet):
         features, labels = self.bullshit_parser(tweet)
@@ -296,14 +304,15 @@ def main():
     y = ["glad", "glad", "glad", "glad", "arg", "arg", "arg", "arg", "ledsen", "ledsen", "ledsen", "ledsen",
          "exalterad", "exalterad", "exalterad", "exalterad"]
 
-    data = DataParser("./dual_parsed_data/")
+    data = DataParser("./parsed_data/", vocab_count=40)
+    translator = data.get_tag_dict()
     x, y = data.parse_train()
 
     # Create a HashtagTrainer object with the tweets and their hashtags
-    b = HashtagTrainer(x, y)
+    b = HashtagTrainer(x, y, translator=translator)
 
     # Train the model
-    b.fit()
+    b.stochastic_fit()
 
     # --------------------- Testing ---------------------- #
     # These test-tweets:

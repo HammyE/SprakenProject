@@ -61,7 +61,7 @@ class DataParser:
         self._X = np.zeros([self._n_values, self._n_features])
 
         for i, tweet in enumerate(self._tweets):
-            self._y[i] = tweet.get_tag()
+            self._y[i] = self._index_tag_dict[tweet.get_tag()]
             self._X[i, :] = self.get_tweet_vector(tweet.get_text())
 
         self._X_train, self._X_test, self._y_train, self._y_test = train_test_split(self._X, self._y,
@@ -81,7 +81,6 @@ class DataParser:
 
     def parse_test(self):
         return self._X_test, self._y_test
-        # return np.array(["GenericTweet"] * 5), np.array(["GenericHashtag"] * 5)
 
     def get_rand_tweet(self):
         return random.sample(self._tweets, 1)[0]
@@ -91,7 +90,7 @@ class DataParser:
 
 
 def main():
-    data = DataParser("./parsed_data/")
+    data = DataParser("./dual_parsed_data_short/")
     for i in range(10):
         print(data.get_rand_tweet().get_tag())
 
