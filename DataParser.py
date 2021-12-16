@@ -38,6 +38,7 @@ class DataParser:
         self._tags = 0
         self._index_tag_dict = dict()
         self._tag_index_dict = dict()
+        self._vocab_counter = dict()
         for filename in os.listdir(directory):
             if filename.endswith(".txt"):
                 tag = filename.replace(".txt", '')
@@ -49,11 +50,17 @@ class DataParser:
                     for raw_tweet in file.read().split("\n"):
                         self._tweets.append(Tweet(raw_tweet, tag))
                         for token in raw_tweet.split(' '):
-                            local_vocab[token] += 1
+                            if len(token) > 0:
+                                local_vocab[token.replace("#", '')] += 1
                     for i in range(vocab_count):
                         token = max(local_vocab, key=local_vocab.get)
                         if token not in self._top_tokens:
+                            self._vocab_counter[token] = 0
                             self._top_tokens.append(token)
+                        else:
+                            self._vocab_counter[token] += 1
+                            if self._vocab_counter[token] == 3:
+                                self._top_tokens.remove(token)
                         local_vocab.pop(token)
         self._n_features = len(self.get_tweet_vector())
         self._n_values = len(self._tweets)
@@ -90,7 +97,7 @@ class DataParser:
 
 
 def main():
-    data = DataParser("./triple_parsed_data/")
+    data = DataParser("./parsed_data/", vocab_count=40)
     for i in range(10):
         print(data.get_rand_tweet().get_tag())
 

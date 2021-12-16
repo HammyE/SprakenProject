@@ -28,7 +28,9 @@ class HashtagTrainer(object):
         #  ------------- Hyperparameters ------------------ #
 
         self.LEARNING_RATE = 0.1  # The learning rate. 0.01
-        self.CONVERGENCE_MARGIN = 0.004  # The convergence criterion. 0.001
+        self.CONVERGENCE_MARGIN = 0.01  # The convergence criterion. 0.001
+        self.MAX_ITERATIONS = 50000  # Maximal number of passes through the datapoints in stochastic gradient descent.
+        self.CONVERGENCE_MARGIN = 0.01  # The convergence criterion. 0.001
         self.MAX_ITERATIONS = 1000  # Maximal number of passes through the datapoints in stochastic gradient descent.
         self.MINIBATCH_SIZE = 100
 
@@ -61,8 +63,8 @@ class HashtagTrainer(object):
             self.y = np.array(y)
 
             # The weights we want to learn in the training phase.
-            # self.theta = np.random.uniform(-1, 1, (self.LABELS, self.FEATURES))
-            self.theta = np.ones((self.LABELS, self.FEATURES))
+            self.theta = np.random.uniform(-1, 1, (self.LABELS, self.FEATURES))
+            # self.theta = np.ones((self.LABELS, self.FEATURES))
 
             # The current jacoby matrix.
             self.jacoby = np.zeros((self.LABELS, self.FEATURES))
@@ -163,7 +165,7 @@ class HashtagTrainer(object):
             if np.sum(self.jacoby ** 2) < self.CONVERGENCE_MARGIN:
                 break
 
-            if iterator % 10 == 0:
+            if iterator % 1000 == 0:
                 self.update_plot(self.loss(self.x, self.y))
 
     def stochastic_fit(self):
@@ -174,11 +176,11 @@ class HashtagTrainer(object):
         count = 0
 
         for i in range(self.MAX_ITERATIONS):
-            count += 1
             self.compute_jacobian(random.randint(0, self.DATAPOINTS - 1))
 
-            if count%50 == 1:
+            if count % 50 == 0:
                 self.update_plot(self.loss(self.x, self.y))
+            count += 1
 
             # Uppdaterar sedan vikterna
             for k in range(1, self.LABELS):
@@ -199,7 +201,7 @@ class HashtagTrainer(object):
                 for n in range(0, self.FEATURES):
                     self.theta[k][n] = self.theta[k][n] - self.LEARNING_RATE * self.jacoby[k][n]
 
-            self.update_plot(self.loss(self.x, self.y))
+            #self.update_plot(self.loss(self.x, self.y))
 
             # When the step is small enough it means we're almost at the minimum
             if np.sum(self.jacoby ** 2) < self.CONVERGENCE_MARGIN:
@@ -244,7 +246,13 @@ class HashtagTrainer(object):
                 precision = "N/A"
             else:
                 precision = str(int((row[i] / row.sum()) * 100))
-            print("Precision for #" + self.labels[i] + " = " + precision + "%")
+
+            if self.translator:
+                label = self.translator[int(self.labels[i])]
+            else:
+                label = self.labels[i]
+
+            print("Precision for #" + label + " = " + precision + '%')
 
         for column in range(self.LABELS):
             sum = 0
@@ -255,7 +263,13 @@ class HashtagTrainer(object):
                 recall = "N/A"
             else:
                 recall = str(int((results[column][column] / sum) * 100))
-            print("Recall for #" + self.labels[column] + " = " + recall + "%")
+
+            if self.translator:
+                label = self.translator[int(self.labels[column])]
+            else:
+                label = self.labels[column]
+
+            print("Recall for #" + label + " = " + recall + '%')
 
     def classify_input(self, tweet):
         features, labels = self.bullshit_parser(tweet)
@@ -335,15 +349,11 @@ def main():
     y = ["glad", "glad", "glad", "glad", "arg", "arg", "arg", "arg", "ledsen", "ledsen", "ledsen", "ledsen",
          "exalterad", "exalterad", "exalterad", "exalterad"]
 
-    data = DataParser("./parsed_data/", vocab_count=40)
-    translator = data.get_tag_dict()
-    x, y = data.parse_train()
-
     # Create a HashtagTrainer object with the tweets and their hashtags
-    b = HashtagTrainer(x, y, translator=translator)
+    b = HashtagTrainer(x, y)
 
     # Train the model
-    b.minibatch_fit()
+    b.fit()
 
     # --------------------- Testing ---------------------- #
     # These test-tweets:
@@ -355,8 +365,6 @@ def main():
 
     # The test-tweet's hashtags
     test_labels = ["glad", "exalterad"]
-
-    test_data, test_labels = data.parse_test()
 
     b.classify_datapoints(test_data, test_labels)
 
