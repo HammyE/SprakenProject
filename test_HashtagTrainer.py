@@ -37,7 +37,7 @@ class HashtagTesting:
         self.trainer = HashtagTrainer(x, y)
 
         # Train the model
-        self.trainer.fit()
+        self.trainer.minibatch_fit()
 
     def test(self):
         # --------------------- Testing ---------------------- #

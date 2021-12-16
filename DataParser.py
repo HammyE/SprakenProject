@@ -90,7 +90,7 @@ class DataParser:
 
 
 def main():
-    data = DataParser("./dual_parsed_data_short/")
+    data = DataParser("./triple_parsed_data/")
     for i in range(10):
         print(data.get_rand_tweet().get_tag())
 
