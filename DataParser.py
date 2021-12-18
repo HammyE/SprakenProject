@@ -54,6 +54,8 @@ class DataParser:
 
         #  print(self._top_tokens)
 
+        print(self._top_tokens)
+
         for i, tweet in enumerate(self._tweets):
             self._y[i] = self._index_tag_dict[tweet.get_tag()]
             self._X[i, :] = self.get_tweet_vector(tweet.get_text())

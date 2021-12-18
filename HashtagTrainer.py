@@ -10,24 +10,24 @@ matplotlib.use("TkAgg")
 
 class HashtagTrainer(object):
     """
-    This class performs multinomial logistic regression using batch gradient descent
-    or stochastic gradient descent
+    Denna klass utför multinomial logistisk regression, den använder sig antingen av
+    batch gradient descent, stochastic gradient descent eller minibatch gradient descent
     """
 
     def __init__(self, x=None, y=None, theta=None, translator=None):
         """
-        :Constructor: Imports the data and labels needed to build theta.
+        :Konstruktor: Importerar tweetsen och klasserna för att kunna bygga theta matrisen
 
-        :param x: The input as a DATAPOINT*FEATURES array.
-        :param y: The labels as a DATAPOINT array.
-        :param theta: A ready-made model. (instead of x and y)
+        :param x: Input som är en tweets x särdrags matris
+        :param y: Klasserna som är en vektor av längd antal datapunkter (tweets)
+        :param theta: En redo theta model (istället för x och y)
         """
 
         #  ------------- Hyperparameters ------------------ #
 
-        self.LEARNING_RATE = 0.1  # The learning rate. 0.01
-        self.MAX_ITERATIONS = 5000  # Maximal number of passes through the datapoints in stochastic gradient descent.
-        self.CONVERGENCE_MARGIN = 0.005  # The convergence criterion. 0.001
+        self.LEARNING_RATE = 0.1            # Lärningstaktem 0.1
+        self.MAX_ITERATIONS = 5000          # Max antal gånger att gå igenom datapunkterna i stochastic gradient descent.
+        self.CONVERGENCE_MARGIN = 0.005     # The convergence criterion. 0.005
         self.MINIBATCH_SIZE = 100
         self.lamda = 0.01
 
@@ -41,29 +41,28 @@ class HashtagTrainer(object):
             self.theta = theta
 
         elif not (type(x) is type(None) or type(y) is type(None)):
-            # Number of datapoints.
+            # Antal datapunkter
             self.DATAPOINTS = len(x)
 
-            # Number of features.
+            # Antal särdrag
             self.FEATURES = len(x[0]) + 1
 
-            # Number of labels.
+            # Antal klasser
             self.LABELS = len(set(y))
 
-            # Distinct labels.
+            # Distinkta klasser
             self.labels = list(dict.fromkeys(y))
 
-            # Encoding of the data points (as a DATAPOINTS x FEATURES size array).
+            # Datapunkterna x Särdragen plus dummy särdragen
             self.x = np.concatenate((np.ones((self.DATAPOINTS, 1)), x), axis=1)
 
-            # Correct labels for the datapoints.
+            # Rätt klasser för datapunkterna
             self.y = np.array(y)
 
-            # The weights we want to learn in the training phase.
+            # Vikterna som vi uppdaterar under träningen
             self.theta = np.random.uniform(-1, 1, (self.LABELS, self.FEATURES))
-            # self.theta = np.ones((self.LABELS, self.FEATURES))
 
-            # The current jacoby matrix.
+            # Jacoby matrisen
             self.jacoby = np.zeros((self.LABELS, self.FEATURES))
 
             self.translator = translator
@@ -72,10 +71,10 @@ class HashtagTrainer(object):
 
     def loss(self, x, y):
         """
-        Computes the loss function given the input features x and labels y
+        Uför loss funktionen givet särdragsvektorerna och klasserna
 
-        :param      x:    The input features
-        :param      y:    The correct labels
+        :param      x:    Input särdragsvektoerna
+        :param      y:    De rätta klasserna
         """
         the_sum = 0
 
@@ -89,14 +88,13 @@ class HashtagTrainer(object):
 
     def softmax(self, z):
         """
-        The softmax function.
+        Softmax funktionen
         """
         return np.exp(z) / sum(np.exp(z))
 
-    def compute_jacobian_for_all(self):
+    def compute_gradient_for_all(self):
         """
-        Computes the jacobian matrix based on the entire dataset
-        (used for batch gradient descent).
+        Sakapar jacobianen baserat på hela datsettet
         """
         for k in range(0, self.LABELS):
             k_label_sum = 0
@@ -107,13 +105,14 @@ class HashtagTrainer(object):
                 else:
                     k_label_sum += self.x[d] * hv
             k_label_avg = k_label_sum / self.DATAPOINTS
+
+            # Uppdaterar jacoby matrisen, de riktningarna
             for n in range(0, self.FEATURES):
                 self.jacoby[k][n] = k_label_avg[n]
 
-    def compute_jacobian(self, datapoint):
+    def compute_gradient(self, datapoint):
         """
-        Computes the gradient based on a single datapoint
-        (used for stochastic gradient descent).
+        Skapar jacobianen baserat på en enda datapunkt
         """
         for k in range(0, self.LABELS):
             k_label_sum = 0
@@ -123,103 +122,110 @@ class HashtagTrainer(object):
             else:
                 k_label_sum += self.x[datapoint] * hv
 
+            # Uppdaterar jacoby matrisen, de riktningarna
             for n in range(0, self.FEATURES):
                 self.jacoby[k][n] = k_label_sum[n]
 
-    def compute_jacobian_minibatch(self, minibatch):
+    def compute_gradient_minibatch(self, minibatch):
         """
-        Computes the jocobian based on a minibatch
-        (used for minibatch gradient descent).
+        Skapar jacobianen baserat på en minibatch
         """
         for k in range(0, self.LABELS):
             k_label_sum = 0
             for d in minibatch:
                 hv = (self.softmax(np.dot(self.theta, self.x[d])))[k]
                 if self.labels[k] == self.y[d]:
-                    k_label_sum += self.x[d] * (hv - 1) #+ 2*self.lamda * self.theta[k]
+                    k_label_sum += self.x[d] * (hv - 1)
                 else:
                     k_label_sum += self.x[d] * hv
             k_label_avg = k_label_sum / len(minibatch)
+
+            # Uppdaterar jacoby matrisen, de riktningarna
             for n in range(0, self.FEATURES):
                 self.jacoby[k][n] = k_label_avg[n]
 
     def minibatch_fit(self):
         """
-        Performs Mini-batch Gradient Descent.
+        Utför Mini-batch Gradient Descent.
         """
         self.init_plot(self.FEATURES)
+        count = 0
 
-        iterator = 0
         while True:
             minibatch = random.sample(range(len(self.x)), self.MINIBATCH_SIZE)
-            self.compute_jacobian_minibatch(minibatch)
+            self.compute_gradient_minibatch(minibatch)
 
-            # Uppdaterar sedan vikterna
+            # Efter att ha uppdaterat jacobian så stegar vi i motsatt riktning till den brantaste vägen,
+            # dvs vi lokaliserar minmumet
             for k in range(1, self.LABELS):
                 for n in range(0, self.FEATURES):
                     self.theta[k][n] = self.theta[k][n] - self.LEARNING_RATE * self.jacoby[k][n]
 
+            if count % 500 == 0:
+                self.update_plot(self.loss(self.x, self.y))
+                count += 1
 
-
+            # När steget är tillräckligt litet avbryts loopen
             if np.sum(self.jacoby ** 2) < self.CONVERGENCE_MARGIN:
                 print(self.theta)
                 break
 
-            if iterator % 500 == 0:
-                self.update_plot(self.loss(self.x, self.y))
-            if iterator % 5000 == 0:
-                print(np.sum(self.jacoby ** 2))
-            iterator += 1
-
     def stochastic_fit(self):
         """
-        Performs Stochastic Gradient Descent.
+        Utför Stochastic Gradient Descent.
         """
         self.init_plot(self.FEATURES)
         count = 0
 
         for i in range(self.MAX_ITERATIONS):
-            self.compute_jacobian(random.randint(0, self.DATAPOINTS - 1))
+            self.compute_gradient(random.randint(0, self.DATAPOINTS - 1))
+
+            # Efter att ha uppdaterat jacobian så stegar vi i motsatt riktning till den brantaste vägen,
+            # dvs vi lokaliserar minmumet
+            for k in range(1, self.LABELS):
+                for n in range(0, self.FEATURES):
+                    self.theta[k][n] = self.theta[k][n] - self.LEARNING_RATE * self.jacoby[k][n]
 
             if count % 50 == 0:
                 self.update_plot(self.loss(self.x, self.y))
-            count += 1
-
-            # Uppdaterar sedan vikterna
-            for k in range(1, self.LABELS):
-                for n in range(0, self.FEATURES):
-                    self.theta[k][n] = self.theta[k][n] - self.LEARNING_RATE * self.jacoby[k][n]
+                count += 1
 
     def fit(self):
         """
-        Performs Batch Gradient Descent
+        Utför Batch Gradient Descent
         """
         self.init_plot(self.FEATURES)
-        while True:
-            self.compute_jacobian_for_all()
+        count = 0
 
-            # Time to update the weights, we'll go in opposite direction of the steepest route
-            # meaning we're locating the minimum
+        while True:
+            self.compute_gradient_for_all()
+
+            # Efter att ha uppdaterat jacobian så stegar vi i motsatt riktning till den brantaste vägen,
+            # dvs vi lokaliserar minmumet
             for k in range(1, self.LABELS):
                 for n in range(0, self.FEATURES):
                     self.theta[k][n] = self.theta[k][n] - self.LEARNING_RATE * self.jacoby[k][n]
 
-            #self.update_plot(self.loss(self.x, self.y))
+            if count % 50 == 0:
+                self.update_plot(self.loss(self.x, self.y))
+                count += 1
 
-            # When the step is small enough it means we're almost at the minimum
+            # När steget är tillräckligt litet avbryts loopen
             if np.sum(self.jacoby ** 2) < self.CONVERGENCE_MARGIN:
                 break
 
     def classify_datapoints(self, test_data, test_labels):
         """
-        Classifies datapoints
+        Klassificerar testdatan
         """
 
+        # Lägger på dummy särdraget
         test_data = np.concatenate((np.ones((len(test_labels), 1)), test_data), axis=1)
 
         if self.FEATURES != len(test_data[0]):
-            print("Error: Felaktig indata")
+            raise Exception('Felaktig indata')
 
+        # Skapar en matris där diagonalen representerar de korrekta klassficieringarna
         results = np.zeros((self.LABELS, self.LABELS))
 
         for i in range(len(test_data)):
@@ -241,9 +247,14 @@ class HashtagTrainer(object):
         print("------------------------------- End of model -------------------------------\n")
 
     def model_evaluation(self, results):
+        """
+        Räknar ut modellens accuracy, precision och recall
+        """
+        # Accuracy
         accuracy = np.trace(results) / np.sum(results) * 100
         print(f"Accuracy: {str(accuracy)} %")
 
+        # Precision
         for i, row in enumerate(results):
             if row.sum() == 0:
                 precision = "N/A"
@@ -257,6 +268,7 @@ class HashtagTrainer(object):
 
             print("Precision for #" + label + " = " + precision + '%')
 
+        # Recall
         for column in range(self.LABELS):
             sum = 0
             for i, row in enumerate(results):
@@ -275,17 +287,28 @@ class HashtagTrainer(object):
             print("Recall for #" + label + " = " + recall + '%')
 
     def classify_input(self, vect):
+        """
+        Klassificerar ny tweets användaren skriver själv
+        """
+        # Lägger till dummy särdraget
         features = np.concatenate((np.array([1]), vect), axis=0)
+
+        # Fördelningen bland klasserna
         probability_vector = self.softmax(np.dot(self.theta, features))
+
+        # Väljer den mest sannolika klassificeringen
         predicted_index = np.argmax(probability_vector, axis=0)
+
+        # Klassen väljs med hjälp av indexet
         hashtag = self.labels[predicted_index]
+
         if self.show_vec:
             print(probability_vector)
         return hashtag
 
     def update_plot(self, *args):
         """
-        Handles the plotting
+        Tar hand om plottningen
         """
 
         if self.i == []:
@@ -306,7 +329,7 @@ class HashtagTrainer(object):
 
     def init_plot(self, num_axes):
         """
-        num_axes is the number of variables that should be plotted.
+        num_axes är antalet variabler som ska plottas
         """
         self.i = []
         self.val = []
@@ -320,20 +343,16 @@ class HashtagTrainer(object):
             self.lines[i], = self.axes.plot([], self.val[0], '-', c=[random.random() for _ in range(3)], linewidth=1.5,
                                             markersize=4)
 
-    def bullshit_parser(self, tweet):
-        return [[1, 1, 1, 0, 0, 0, 0, 0, 0],
-                [1, 0, 0, 0, 0, 0, 1, 1, 1]]
-
     def set_show_vec(self, state=True):
         self.show_vec = state
 
 
 def main():
     """
-    Tests the code on a toy example.
+    Testar koden med ett litet exempel
     """
-    # --------------------- Training ---------------------- #
-    # The training-tweets coded in to their features
+    # -------------------------- Träning -------------------------- #
+    # Träningsdatan i form av en matris
     x = [[1, 1, 0, 0, 0, 0, 0, 0],
          [0, 1, 0, 0, 0, 0, 0, 0],
          [1, 0, 0, 0, 0, 0, 0, 0],
@@ -353,27 +372,25 @@ def main():
 
     x = np.array(x)
 
-    # The training-tweets' hashtags/labels/classes
+    # Och en vektor med klasserna
     y = ["glad", "glad", "glad", "glad", "arg", "arg", "arg", "arg", "ledsen", "ledsen", "ledsen", "ledsen",
          "exalterad", "exalterad", "exalterad", "exalterad"]
 
-    # Create a HashtagTrainer object with the tweets and their hashtags
+    # Skapar ett HashtagTrainer objekt med de 80% av de nedladdade tweetsen och dess hashtags
     b = HashtagTrainer(x, y)
 
-    # Train the model
+    # Val av anpassningsmetod
     b.fit()
 
-    # --------------------- Testing ---------------------- #
-    # These test-tweets:
-    # "vi alla vill gå på denna fest och hoppas på att få le och skratta #glad"
-    # "jag är så taggad och uppspelt att jag tror jag kommer böla #exalterad"
-    # Has been coded into their features
+    # -------------------------- Testning -------------------------- #
+    # Testdatans särdrag
     test_data = [[1, 1, 1, 0, 0, 0, 0, 0, 0],
                  [1, 0, 0, 0, 0, 0, 1, 1, 1]]
 
-    # The test-tweet's hashtags
+    # Testdatans klasser
     test_labels = ["glad", "exalterad"]
 
+    # Utvärderar modellen
     b.classify_datapoints(test_data, test_labels)
 
 
