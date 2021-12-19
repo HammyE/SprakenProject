@@ -9,6 +9,7 @@ from sklearn.model_selection import train_test_split
 
 
 class Tweet:
+    """A class for the storage of tweets"""
 
     def __init__(self, text, hashtag):
         self._text = text
@@ -31,8 +32,17 @@ class Tweet:
 
 
 class DataParser:
+    """This class parses a set of corpuses to create a feature vectors for the hashtagger."""
 
-    def __init__(self, directory, vocab_count=17):
+    def __init__(self, directory, vocab_count=100, tolerance=3):
+        """Returns a DataParser object tailored to the directory entered.
+
+        :param directory:    Stores .txt files with tweets grouped by hashtag. The format for the files should
+                            be tag.txt and contain the tweets without the tag, in lower case, separated by row.
+
+        :param vocab_count:  The amount of keywords to be considered per hashtag
+
+        :param tolerance:    The amount of times a keyword is allowed to appear as a top word in a corpus. """
 
         self.common_words = ['the', 'to', 'in', 'of', 'a', 'and', 'for', 'you', 'is', 'on', 'this', 'be', 'as', 'should', 'via', 'from', 'that', 'or', 'with', 'will', 'by', 'has', 'have', 'at', 'it']
         self._tweets = []
@@ -42,6 +52,7 @@ class DataParser:
         self._tag_index_dict = dict()
         self._corpus_occurrences = dict()
         self.vocab_count = vocab_count
+        self._tolerance = tolerance
 
         for filename in os.listdir(directory):
             if filename.endswith(".txt"):
@@ -49,7 +60,7 @@ class DataParser:
 
         self._n_features = len(self.get_tweet_vector())
         self._n_values = len(self._tweets)
-        self._y = np.array(['']*self._n_values)
+        self._y = np.array([0]*self._n_values)
         self._X = np.zeros([self._n_values, self._n_features])
 
         #  print(self._top_tokens)
@@ -64,6 +75,7 @@ class DataParser:
                                                                                     test_size=0.2)  # random_state=42
 
     def add_file(self, filename, directory):
+        '''Parses an individual file.'''
         tag = filename.replace(".txt", '')
         self._index_tag_dict[tag] = self._tags
         self._tag_index_dict[self._tags] = tag
@@ -84,31 +96,38 @@ class DataParser:
                     self._top_tokens.append(token)
                 else:
                     self._corpus_occurrences[token] += 1
-                    if self._corpus_occurrences[token] == 3:
+                    if self._corpus_occurrences[token] == self._tolerance:
                         self._top_tokens.remove(token)
                 local_vocab.pop(token)
 
     def get_tweet_vector(self, text='hej'):
+        """Creates a feature vector for the string argument
+
+        :param String text: The string from which the vector is created.
+        :returns an numpy array of the features"""
         text = text.lower()
         text = text.translate(str.maketrans('', '', string.punctuation))
         tests = []
         for token in self._top_tokens:
             tests.append(text.count(' ' + token + ' '))
-        # tests.append(len(text))
 
         return np.array(tests)
 
 
     def parse_train(self):
+        """:returns: The training features and labels"""
         return self._X_train, self._y_train
 
     def parse_test(self):
+        """:returns: The test features and labels"""
         return self._X_test, self._y_test
 
     def get_rand_tweet(self):
+        """:returns: A random tweet from the corpus"""
         return random.sample(self._tweets, 1)[0]
 
     def get_tag_dict(self):
+        """:returns: A dictionary to decode the numerical label to the original tag."""
         return self._tag_index_dict
 
 

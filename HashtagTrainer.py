@@ -163,7 +163,7 @@ class HashtagTrainer(object):
 
             if count % 500 == 0:
                 self.update_plot(self.loss(self.x, self.y))
-                count += 1
+            count += 1
 
             # När steget är tillräckligt litet avbryts loopen
             if np.sum(self.jacoby ** 2) < self.CONVERGENCE_MARGIN:
@@ -188,7 +188,7 @@ class HashtagTrainer(object):
 
             if count % 50 == 0:
                 self.update_plot(self.loss(self.x, self.y))
-                count += 1
+            count += 1
 
     def fit(self):
         """
@@ -208,7 +208,7 @@ class HashtagTrainer(object):
 
             if count % 50 == 0:
                 self.update_plot(self.loss(self.x, self.y))
-                count += 1
+            count += 1
 
             # När steget är tillräckligt litet avbryts loopen
             if np.sum(self.jacoby ** 2) < self.CONVERGENCE_MARGIN:

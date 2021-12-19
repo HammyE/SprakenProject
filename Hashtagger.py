@@ -3,9 +3,10 @@ from HashtagTrainer import HashtagTrainer
 
 
 def main():
+
     # -------------------------- Träning -------------------------- #
     # Vilka tweets vi läser in och hur många särdrag vi vill använda
-    data = DataParser("./parsed_data/", vocab_count=400)
+    data = DataParser("./parsed_data/", vocab_count=800, tolerance=3)
 
     # För att kunna översätta från index till hashtag
     translator = data.get_tag_dict()
